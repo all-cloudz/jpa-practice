@@ -41,9 +41,14 @@ class JpaBasicPractices {
         final Team actualFromFirstLevelCache = testEntityManager.find(Team.class, testTeam.getId());
         assertThat(actualFromFirstLevelCache).isNotNull();
 
+//        testEntityManager.clear();
+//        final Team actualFromDatabaseBeforeFlush = testEntityManager.find(Team.class, testTeam.getId());
+//        assertThat(actualFromDatabaseBeforeFlush).isNull();
+
+        testEntityManager.flush();
         testEntityManager.clear();
-        final Team actualFromDatabase = testEntityManager.find(Team.class, testTeam.getId());
-        assertThat(actualFromDatabase).isNull();
+        final Team actualFromDatabaseAfterFlush = testEntityManager.find(Team.class, testTeam.getId());
+        assertThat(actualFromDatabaseAfterFlush).isNotNull();
     }
 
     @Test
