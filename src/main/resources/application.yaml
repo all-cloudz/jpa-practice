@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    active:
+      - test
+      - common
+    include:
+      - db
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+logging:
+  level:
+    com: debug
+    org.hibernate.type: info
