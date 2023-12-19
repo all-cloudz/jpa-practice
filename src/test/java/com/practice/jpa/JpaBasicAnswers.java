@@ -18,7 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 @Transactional
 @AutoConfigureTestEntityManager
-class JpaBasicPractices {
+class JpaBasicAnswers {
 
     @Autowired
     private EntityManagerFactory entityManagerFactory;
@@ -39,16 +39,11 @@ class JpaBasicPractices {
 
         // then
         final Team actualFromFirstLevelCache = testEntityManager.find(Team.class, testTeam.getId());
-        assertThat(actualFromFirstLevelCache).________;
+        assertThat(actualFromFirstLevelCache).isNotNull();
 
-//        testEntityManager.clear();
-//        final Team actualFromDatabaseBeforeFlush = testEntityManager.find(Team.class, testTeam.getId());
-//        assertThat(actualFromDatabaseBeforeFlush).________;
-
-        testEntityManager.flush();
         testEntityManager.clear();
-        final Team actualFromDatabaseAfterFlush = testEntityManager.find(Team.class, testTeam.getId());
-        assertThat(actualFromDatabaseAfterFlush).________;
+        final Team actualFromDatabase = testEntityManager.find(Team.class, testTeam.getId());
+        assertThat(actualFromDatabase).isNull();
     }
 
     @Test
@@ -67,10 +62,10 @@ class JpaBasicPractices {
 
             // then
             final Member actual = entityManager.find(Member.class, member.getId());
-            assertThat(actual).________;
-            tx.________;
+            assertThat(actual).isNotNull();
+            tx.commit();
         } catch (Exception e) {
-            tx.________;
+            tx.rollback();
             throw e;
         } finally {
             entityManager.close();
@@ -88,7 +83,7 @@ class JpaBasicPractices {
 
         // then
         final Member actual = testEntityManager.find(Member.class, member.getId());
-        assertThat(actual).________;
+        assertThat(actual).isNotNull();
     }
 
     @Test
@@ -98,16 +93,16 @@ class JpaBasicPractices {
         final Team team = createTestTeam();
 
         // when
-        testEntityManager.________(member);
-        testEntityManager.________(team);
+        testEntityManager.persist(member); // 1차 캐시에 저장, Flush insert SQL because of identity strategy
+        testEntityManager.persist(team); // 1차 캐시에는 저장, Insert SQL을 Flush 하지 않음
         testEntityManager.clear();
 
         // then
         final Member actualMember = testEntityManager.find(Member.class, member.getId());
-        assertThat(actualMember).________;
+        assertThat(actualMember).isNotNull();
 
         final Team actualTeam = testEntityManager.find(Team.class, team.getId());
-        assertThat(actualTeam).________;
+        assertThat(actualTeam).isNull();
     }
 
     @Test
@@ -117,18 +112,18 @@ class JpaBasicPractices {
         final Team team = createTestTeam();
 
         // when
-        testEntityManager.persist(member);
-        testEntityManager.persist(team);
+        testEntityManager.persist(member); // 1차 캐시에 저장, Flush insert SQL because of identity strategy
+        testEntityManager.persist(team); // 1차 캐시에 저장, Save insert SQL on write buffer
 
-        testEntityManager.flush();
+        testEntityManager.flush(); // Flush Insert SQL
         testEntityManager.clear();
 
         // then
         final Member actualMember = testEntityManager.find(Member.class, member.getId());
-        assertThat(actualMember).________;
+        assertThat(actualMember).isNotNull();
 
         final Team actualTeam = testEntityManager.find(Team.class, team.getId());
-        assertThat(actualTeam).________;
+        assertThat(actualTeam).isNotNull();
     }
 
     @Test
@@ -146,7 +141,7 @@ class JpaBasicPractices {
             // when
             final Member found = entityManager.find(Member.class, member.getId());
             found.updateName("update-test");
-            entityManager.________;
+            entityManager.flush(); // Query after dirty checking
             entityManager.clear();
 
             // then
@@ -165,20 +160,20 @@ class JpaBasicPractices {
     void practice7_updateMemberAutomatically() {
         // given
         final Member member = createTestMember();
-        memberRepository.________(member);
+        memberRepository.save(member);
         testEntityManager.clear();
 
         // when
         final Member found = memberRepository.findById(member.getId())
                                              .orElseThrow(RuntimeException::new);
         found.updateName("update-test");
-        memberRepository.________;
+        memberRepository.flush();
         testEntityManager.clear();
 
         // then
         final Member actual = memberRepository.findById(found.getId())
                                               .orElseThrow(RuntimeException::new);
-        assertThat(actual.getName()).________;
+        assertThat(actual.getName()).isEqualTo("update-test");
     }
 
     private static Member createTestMember() {
